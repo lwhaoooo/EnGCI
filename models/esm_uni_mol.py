@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import pdb
 
 # ResNetBlock的定义保持不变
 class ResNetBlock(nn.Module):
@@ -51,20 +52,20 @@ class AffinityModel(nn.Module):
         # Protein feature network with additional convolutional layers and ResNet blocks
         self.protein_conv = nn.Sequential(
             ResNetBlock(channels=1280),
-            ResNetBlock(channels=1280),
-            nn.Conv1d(in_channels=1280, out_channels=640, kernel_size=8, padding=4),
-            nn.ReLU(),
-            nn.BatchNorm1d(640),
-            nn.Conv1d(in_channels=640, out_channels=320, kernel_size=8, padding=4),
-            nn.ReLU(),
-            nn.BatchNorm1d(320),
-            nn.Conv1d(in_channels=320, out_channels=128, kernel_size=8, padding=4),
-            nn.ReLU(),
-            nn.BatchNorm1d(128)
+            ResNetBlock(channels=1280)
+            # nn.Conv1d(in_channels=1280, out_channels=640, kernel_size=8, padding=4),
+            # nn.ReLU(),
+            # nn.BatchNorm1d(640),
+            # nn.Conv1d(in_channels=640, out_channels=320, kernel_size=8, padding=4),
+            # nn.ReLU(),
+            # nn.BatchNorm1d(320),
+            # nn.Conv1d(in_channels=320, out_channels=128, kernel_size=8, padding=4),
+            # nn.ReLU(),
+            # nn.BatchNorm1d(128)
         )
 
         # Reduce protein features to match the embedding dimension of the drug features
-        self.reduce_protein_dim = nn.Linear(128, 512)
+        self.reduce_protein_dim = nn.Linear(1280, 512)
 
         # Bidirectional attention mechanism
         self.attention_drug_to_protein = nn.MultiheadAttention(embed_dim=512, num_heads=4)
@@ -88,14 +89,15 @@ class AffinityModel(nn.Module):
         protein_feature = self.reduce_protein_dim(protein_feature)
 
         # Bidirectional attention
-        drug_feature = drug_feature.unsqueeze(0)
-        protein_feature = protein_feature.unsqueeze(0)
+        # drug_feature = drug_feature.unsqueeze(0)
+        # protein_feature = protein_feature.unsqueeze(0)
         
-        attn_output_drug, _ = self.attention_drug_to_protein(drug_feature, protein_feature, protein_feature)
-        attn_output_protein, _ = self.attention_protein_to_drug(protein_feature, drug_feature, drug_feature)
+        # attn_output_drug, _ = self.attention_drug_to_protein(drug_feature, protein_feature, protein_feature)
+        # attn_output_protein, _ = self.attention_protein_to_drug(protein_feature, drug_feature, drug_feature)
         
         # Combine the drug and protein features
-        combined_features = torch.cat((attn_output_drug.squeeze(0), attn_output_protein.squeeze(0)), dim=1)
+        combined_features = torch.cat((drug_feature, protein_feature), dim=1)
+        # combined_features = torch.cat((attn_output_drug.squeeze(0), attn_output_protein.squeeze(0)), dim=1)
 
         # 使用 KAN 网络进行分类
         x = self.kan_combined(combined_features)
