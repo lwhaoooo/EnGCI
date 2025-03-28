@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import pdb
+from models.kan import KANLinear  
 
 class ResNetBlock(nn.Module):
     def __init__(self, channels, kernel_size=3, dropout=0.5):
