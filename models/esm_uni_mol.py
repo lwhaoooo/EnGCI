@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import pdb
 
-# ResNetBlock的定义保持不变
 class ResNetBlock(nn.Module):
     def __init__(self, channels, kernel_size=3, dropout=0.5):
         super(ResNetBlock, self).__init__()
@@ -23,22 +22,6 @@ class ResNetBlock(nn.Module):
         out = self.relu(x + y)
         return out
 
-# Kolmogorov-Arnold Network (KAN) 定义
-class KolmogorovArnoldNetwork(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim):
-        super(KolmogorovArnoldNetwork, self).__init__()
-        self.lambdas = nn.Parameter(torch.randn(hidden_dim, input_dim))
-        self.phi = nn.ReLU()  # 激活函数，选择 ReLU 作为示例
-        self.output_weights = nn.Linear(hidden_dim, output_dim)
-
-    def forward(self, x):
-        # 计算单变量函数组合
-        hidden_output = self.phi(torch.matmul(x, self.lambdas.T))
-        # 线性组合得到最终输出
-        output = self.output_weights(hidden_output)
-        return output
-
-# AffinityModel的定义
 class AffinityModel(nn.Module):
     def __init__(self):
         super(AffinityModel, self).__init__()
@@ -53,15 +36,6 @@ class AffinityModel(nn.Module):
         self.protein_conv = nn.Sequential(
             ResNetBlock(channels=1280),
             ResNetBlock(channels=1280)
-            # nn.Conv1d(in_channels=1280, out_channels=640, kernel_size=8, padding=4),
-            # nn.ReLU(),
-            # nn.BatchNorm1d(640),
-            # nn.Conv1d(in_channels=640, out_channels=320, kernel_size=8, padding=4),
-            # nn.ReLU(),
-            # nn.BatchNorm1d(320),
-            # nn.Conv1d(in_channels=320, out_channels=128, kernel_size=8, padding=4),
-            # nn.ReLU(),
-            # nn.BatchNorm1d(128)
         )
 
         # Reduce protein features to match the embedding dimension of the drug features
@@ -71,8 +45,21 @@ class AffinityModel(nn.Module):
         self.attention_drug_to_protein = nn.MultiheadAttention(embed_dim=512, num_heads=4)
         self.attention_protein_to_drug = nn.MultiheadAttention(embed_dim=512, num_heads=4)
 
-        # 使用 KAN 替换原来的 MLP
-        self.kan_combined = KolmogorovArnoldNetwork(input_dim=1024, hidden_dim=256, output_dim=1)
+        self.kan_combined = KANLinear(in_features=1024, out_features=1, grid_size=5, spline_order=3, 
+                                      scale_noise=0.1, scale_base=1.0, scale_spline=1.0, 
+                                      enable_standalone_scale_spline=True, base_activation=nn.SiLU)
+
+        # self.fc_combined = nn.Sequential(
+        #     nn.Linear(1024, 512),
+        #     nn.ReLU(),
+        #     nn.BatchNorm1d(512),
+        #     nn.Dropout(0.5),
+        #     nn.Linear(512, 256),
+        #     nn.ReLU(),
+        #     nn.BatchNorm1d(256),
+        #     nn.Dropout(0.5),
+        #     nn.Linear(256, 1)
+        # )
         
     def forward(self, drug_feature, protein_feature):
         # Reshape and process drug features
@@ -88,18 +75,9 @@ class AffinityModel(nn.Module):
         # Reduce protein feature dimension to match drug feature dimension
         protein_feature = self.reduce_protein_dim(protein_feature)
 
-        # Bidirectional attention
-        # drug_feature = drug_feature.unsqueeze(0)
-        # protein_feature = protein_feature.unsqueeze(0)
-        
-        # attn_output_drug, _ = self.attention_drug_to_protein(drug_feature, protein_feature, protein_feature)
-        # attn_output_protein, _ = self.attention_protein_to_drug(protein_feature, drug_feature, drug_feature)
-        
         # Combine the drug and protein features
         combined_features = torch.cat((drug_feature, protein_feature), dim=1)
-        # combined_features = torch.cat((attn_output_drug.squeeze(0), attn_output_protein.squeeze(0)), dim=1)
 
-        # 使用 KAN 网络进行分类
         x = self.kan_combined(combined_features)
         
         return x
