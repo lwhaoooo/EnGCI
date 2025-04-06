@@ -1,7 +1,7 @@
 # Description
 EnGCI is a state-of-the-art computational tool designed for predicting the binding affinity between G protein-coupled receptors (GPCRs) and small-molecule compounds. This program enables users to efficiently evaluate GPCR-compound interactions using raw GPCR sequences and compound SMILES inputs, even for targets in unbound states.
 
-To prioritize accessibility and user-friendliness, EnGCI is hosted on a dedicated cloud server, eliminating the need for local installation. The web-based platform supports seamless input (Corresponding GPCR sequence and Compound SMILES in data/GPCR_test.csv) and outputs affinity predictions through an automated workflow, including feature processing and model inference. Researchers can currently access the tool via a temporary server at：https://662d72ffec5c8bc307.gradio.live
+To prioritize accessibility and user-friendliness, EnGCI is hosted on a dedicated cloud server, eliminating the need for local installation. The web-based platform supports seamless input (Corresponding GPCR sequence and Compound SMILES in data/GPCR_test.csv) and outputs affinity predictions through an automated workflow, including feature processing and model inference. Researchers can currently access the tool via a temporary server at：https://483f8731616ddcfef1.gradio.live
 
 # Source codes:
 - create_GPCR_data.py: Processing pytorch data for model 1
