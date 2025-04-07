@@ -130,14 +130,14 @@ val_loader = DataLoader(val_dataset, batch_size=test_batch_size, shuffle=False, 
 test_loader = DataLoader(test_dataset, batch_size=test_batch_size, shuffle=False, num_workers=2)
 
 model = AffinityModel().to(device)
-criterion = nn.BCEWithLogitsLoss()  # 修改：使用 BCEWithLogitsLoss 作为损失函数
+criterion = nn.BCEWithLogitsLoss()  
 
-# 修改1：增加学习率调度器
+
 optimizer = optim.AdamW(model.parameters(), lr=0.0005, weight_decay=1e-5)  # 添加 L2 正则化
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=10)  # 学习率调度器
 
 def calculate_metrics(y_true, y_pred):
-    y_pred_labels = (y_pred >= 0.5).astype(int)  # 修改：将概率转换为二值标签
+    y_pred_labels = (y_pred >= 0.5).astype(int)  
     auc = roc_auc_score(y_true, y_pred)
     prc = average_precision_score(y_true, y_pred)
     precision = precision_score(y_true, y_pred_labels)
@@ -156,7 +156,7 @@ def predicting(model, device, loader):
             protein_features = protein_features.to(device)
             labels = labels.to(device)
             outputs = model(drug_features, protein_features)
-            preds = torch.sigmoid(outputs).squeeze(1)  # 修改：使用 Sigmoid 将输出转为概率值，并调整维度
+            preds = torch.sigmoid(outputs).squeeze(1)  
             total_preds = torch.cat((total_preds, preds), dim=0)
             total_labels = torch.cat((total_labels, labels), dim=0)
     return total_labels.cpu().numpy().flatten(), total_preds.cpu().numpy().flatten()
@@ -171,11 +171,11 @@ def train(model, device, train_loader, optimizer, epoch):
     for batch_idx, (drug_features, protein_features, labels) in enumerate(train_loader):
         drug_features = drug_features.to(device)
         protein_features = protein_features.to(device)
-        labels = labels.to(device).float()  # 修改：将标签转换为 float 类型
+        labels = labels.to(device).float()  
         
         optimizer.zero_grad()
         # outputs, _ = model(drug_features, protein_features)  # 忽略中间特征
-        outputs = model(drug_features, protein_features).squeeze(1)  # 修改：调整输出维度以匹配 BCEWithLogitsLoss
+        outputs = model(drug_features, protein_features).squeeze(1)  
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
@@ -213,7 +213,6 @@ for epoch in range(num_epochs):
     auc_val, prc_val, precision_val, recall_val, accuracy_val = calculate_metrics(y_true_val, y_pred_val)
     print(f'Epoch {epoch+1}: Validation AUC: {auc_val:.4f}, PRC: {prc_val:.4f}, Precision: {precision_val:.4f}, Recall: {recall_val:.4f}, Accuracy: {accuracy_val:.4f}')
     
-    # 修改3：调整学习率调度器
     scheduler.step(auc_val)  # 使用验证集的 AUC 来调整学习率
 
     # 保存最佳模型
