@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import sys, os  # 用于系统和文件操作
+import sys, os  
 from random import shuffle
 import torch
 import torch.nn as nn
@@ -19,8 +19,8 @@ def train(model, device, train_loader, optimizer, epoch):
     for batch_idx, data in enumerate(train_loader):
         data = data.to(device)  # 将数据移到指定的设备上
         optimizer.zero_grad()  # 清除梯度
-        output = model(data).view(-1)  # 修改：调整输出维度以匹配 BCEWithLogitsLoss
-        loss = loss_fn(output, data.y.float().to(device))  # 修改：使用 BCEWithLogitsLoss 需要将标签转为 float 类型
+        output = model(data).view(-1)  
+        loss = loss_fn(output, data.y.float().to(device))  
         loss.backward()  # 反向传播
         optimizer.step()  # 更新模型参数
         if batch_idx % LOG_INTERVAL == 0:
@@ -29,40 +29,6 @@ def train(model, device, train_loader, optimizer, epoch):
                                                                            len(train_loader.dataset),
                                                                            100. * batch_idx / len(train_loader),
                                                                            loss.item()))
-
-# def train(model, device, train_loader, optimizer, epoch):
-#     print('Training on {} samples...'.format(len(train_loader.dataset)))
-#     model.train()  # 将模型设置为训练模式
-#     for batch_idx, data in enumerate(train_loader):
-#         data = data.to(device)  # 将数据移到指定的设备上
-#         optimizer.zero_grad()  # 清除梯度
-#         output, _ = model(data)  # 忽略中间特征，只需要输出
-#         output = output.view(-1)  # 修改：调整输出维度以匹配 BCEWithLogitsLoss
-#         loss = loss_fn(output, data.y.float().to(device))  # 修改：使用 BCEWithLogitsLoss 需要将标签转为 float 类型
-#         loss.backward()  # 反向传播
-#         optimizer.step()  # 更新模型参数
-#         if batch_idx % LOG_INTERVAL == 0:
-#             print('Train epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch,
-#                                                                            batch_idx * len(data.x),
-#                                                                            len(train_loader.dataset),
-#                                                                            100. * batch_idx / len(train_loader),
-#                                                                            loss.item()))
-
-# def predicting(model, device, loader):
-#     model.eval()  # 将模型设置为评估模式
-#     total_preds = torch.Tensor()  # 存储所有预测结果
-#     total_labels = torch.Tensor()  # 存储所有真实标签
-#     print('Make prediction for {} samples...'.format(len(loader.dataset)))
-#     with torch.no_grad():  # 关闭梯度计算
-#         for data in loader:
-#             data = data.to(device)  # 将数据移到指定的设备上
-#             output, _ = model(data)  # 忽略中间特征
-#             output = output.view(-1)  # 修改：调整输出维度以匹配 BCEWithLogitsLoss
-#             preds = torch.sigmoid(output)  # 修改：使用 Sigmoid 将输出转为概率值
-#             preds = (preds > 0.5).float()  # 修改：将概率值转为二分类结果
-#             total_preds = torch.cat((total_preds, preds.cpu()), 0)  # 记录预测结果
-#             total_labels = torch.cat((total_labels, data.y.cpu()), 0)  # 记录真实标签
-#     return total_labels.numpy().flatten(), total_preds.numpy().flatten()
 
 
 def predicting(model, device, loader):
@@ -75,17 +41,20 @@ def predicting(model, device, loader):
             data = data.to(device)  # 将数据移到指定的设备上
             output = model(data).view(-1)  # 修改：调整输出维度以匹配 BCEWithLogitsLoss
             preds = torch.sigmoid(output)  # 修改：使用 Sigmoid 将输出转为概率值
-            preds = (preds > 0.5).float()  # 修改：将概率值转为二分类结果
+            # preds = (preds > 0.5).float()  # 修改：将概率值转为二分类结果
             total_preds = torch.cat((total_preds, preds.cpu()), 0)  # 记录预测结果
             total_labels = torch.cat((total_labels, data.y.cpu()), 0)  # 记录真实标签
     return total_labels.numpy().flatten(), total_preds.numpy().flatten()
 
-def evaluate_performance(labels, preds):
-    auc = roc_auc_score(labels, preds)
-    prc = average_precision_score(labels, preds)
-    precision = precision_score(labels, preds)
-    recall = recall_score(labels, preds)
-    accuracy = accuracy_score(labels, preds)
+def evaluate_performance(y_true, y_pred):
+    # pdb.set_trace()
+    y_pred_labels = (y_pred >= 0.5).astype(int) 
+    auc = roc_auc_score(y_true, y_pred)
+    prc = average_precision_score(y_true, y_pred)
+    precision = precision_score(y_true, y_pred_labels)
+    recall = recall_score(y_true, y_pred_labels)
+    accuracy = accuracy_score(y_true, y_pred_labels)
+
     return auc, prc, precision, recall, accuracy
 
 datasets = [['GPCR']][int(sys.argv[1])]  # 选择数据集
